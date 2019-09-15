@@ -39,11 +39,11 @@ lat0  = b[:]->lat_0(0,:)
 lon0  = b[:]->lon_0(0,:)
 slp0  = b[it]->PRMSL_P0_L101_GLL0 
 ;-----------------------------------------------------------------------------------
-tk0 = b[it]->TMP_P0_L100_GLL0 ; Temp in Kelvin
-u0  =  b[it]->UGRD_P0_L100_GLL0   ;( lv_ISBL0, lat_0, lon_0 )
-v0  =  b[it]->VGRD_P0_L100_GLL0   ;( lv_ISBL0, lat_0, lon_0 )
-pw  =  b[it]->PWAT_P0_L200_GLL0   ;( lat_0, lon_0 ) GFS PWAT
-rh0 = b[it]->RH_P0_L100_GLL0       ; RH_P0_L100_GLL0 ( lv_ISBL0, lat_0, lon_0 ) relative hum gfs
+tk0 = b[it]->TMP_P0_L100_GLL0     ; 3D Temp in Kelvin
+u0  =  b[it]->UGRD_P0_L100_GLL0   ;( lv_ISBL0, lat_0, lon_0 ) 3D
+v0  =  b[it]->VGRD_P0_L100_GLL0   ;( lv_ISBL0, lat_0, lon_0 ) 3D
+pw  =  b[it]->PWAT_P0_L200_GLL0   ;( lat_0, lon_0 ) GFS PWAT  2D
+rh0 = b[it]->RH_P0_L100_GLL0       ; RH_P0_L100_GLL0 ( lv_ISBL0, lat_0, lon_0 ) 3D relative hum gfs
 
 iso_lvl0 = b[it]->lv_ISBL0 ; vertical levels mb
 
