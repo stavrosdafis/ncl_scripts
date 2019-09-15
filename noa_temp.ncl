@@ -17,12 +17,12 @@ end setvalues
 
 begin
   
-  ascii_filename = "eaa_antonis.txt"
+  ascii_filename = "data_temperature.txt" ; data file with temperature from observations
 
-    ncols = numAsciiCol(ascii_filename)
+    ncols = numAsciiCol(ascii_filename)  ; number of available parameters to read
     nflds = numAsciiRow(ascii_filename)  ; number of available stations
 
- stations = asciiread(ascii_filename,(/nflds,ncols/),"float")  ;for fixed number of stations
+ stations = asciiread(ascii_filename,(/nflds,ncols/),"float") 
   
   print("Number of stations = " + nflds)
   print("Number of variables = " + ncols)
@@ -30,26 +30,17 @@ begin
   x = stations(:,2)  ; Column 3 of file contains LONGITUDE values.
   y = stations(:,1)  ; Column 2 of file contains LATITUDE values.
   z = stations(:,9)  ; Column 10 of file contains TEMPERATURE values.
-;print(z)
-  x = where(x .le. 33 .and. x .ge. 18,x, 33)
-  y = where(y .le. 42.9 .and. y .ge. 34,y,35)
-  z = where(z .le. 46 .and. z .ge. -17,z,10)  ; Check for wrong values
 
-
-;print(dimsizes(z))
-;print(dimsizes(x))
-
-;print(min(x))
-
-;exit
-
+  x = where(x .le. 33 .and. x .ge. 18, x, 33)   ; Check for wrong values
+  y = where(y .le. 42.9 .and. y .ge. 34, y,35)
+  z = where(z .le. 46 .and. z .ge. -17, z,10)  
 
 ;---------------------------- DATES ----------------------------------------
  month_abbr = (/"","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep", \
                     "Oct","Nov","Dec"/)
 
-   year   = tointeger(stations(1,3))   ; Convert to integer for
-   month  = tointeger(stations(1,4))    ; use sprinti 
+   year   = tointeger(stations(1,3))   ; Convert to integer to
+   month  = tointeger(stations(1,4))   ; use sprinti 
    day    = tointeger(stations(1,5))
    hour   = tointeger(stations(1,6))
    minute = tointeger(stations(1,7))
@@ -58,12 +49,12 @@ date_str =  sprinti("%0.2i ", day) + month_abbr(month) + " " + sprinti("%0.4i", 
              " at " +sprinti("%0.2i", hour)+":"+sprinti("%0.2i ", minute) + "local time"
 ;---------------------------------------------------------------------
 
-  numxout = 90  ; Define output grid for call to "natgrids".
+  numxout = 90  ; Define output grid to call interpolation method
   numyout = 90
-  xmin    = 19.15
-  ymin    = 34.60
-  xmax    = 29.9
-  ymax    = 41.9
+  xmin    = 19.15 ; min lon
+  ymin    = 34.60 ; min lat
+  xmax    = 29.9  ; max lon
+  ymax    = 41.9  ; max lat
   zmin    = min(z)
   zmax    = max(z)
 
@@ -75,12 +66,13 @@ print("Max Temp = " + zmax)
   xo      = xmin + ispan(0,numxout-1,1)*xc
   yo      = ymin + ispan(0,numyout-1,1)*yc
 
+; Choose your interpolation method. dsgrid2 is the most appropriate here but there is a bug
+; and must be transposed
+
   ;zo = natgrid(x, y, z, xo, yo)  ; Interpolate.
   ;zo = natgrids(x, y, z, xo, yo) ; Interpolate.
-  ;zo = dspnt2(x, y, z, xo, yo)  ; Interpolate.
-
- ; zo = dsgrid2(x, y, z, xo, yo)  ; Interpolate.
-   
+  ;zo = dspnt2(x, y, z, xo, yo)   ; Interpolate.
+  ;zo = dsgrid2(x, y, z, xo, yo)  ; Interpolate.
    
    ;---DGRID2
 
@@ -88,37 +80,34 @@ zo= transpose(dsgrid2(x, y, z, xo, yo))
 
 zo!0 = "yo"
 zo!1 = "xo"
-zo&yo=  yo ;(::-1)                      ; don't know why
+zo&yo=  yo ;(::-1)                      ; don't know why, this is the bug
 zo&xo=  xo ;(::-1)
 print("---")
 printVarSummary(zo)
 printMinMax(zo,0)
 
-;wrf_smooth_2d(zo, 3)
-   
+;wrf_smooth_2d(zo, 3)  ; you may add some smoothness but this reduces min/max values A LOT!
    
   xo@long_name = "Lon"   ; Define some attributes.
   yo@long_name = "Lat"
   zo@long_name = "Temperature 2m in ~S~o~N~C"
  
- klat = dimsizes(yo)
+klat = dimsizes(yo)
 klon = dimsizes(xo)
 
 real_temp = generate_2d_array(-5,40,min(zo),max(zo),50,(/klat,klon/))
+
+; Open a working station
 
   wks_type = "png" 
   wks_type@wkWidth = 1200  
   wks_type@wkHeight = 1200
   xwks   = gsn_open_wks(wks_type,"noa_temp")
- 
   
  gsn_define_colormap(xwks,"BlAqGrYeOrReVi200") ; For Temperature / Dew Point
  ;gsn_reverse_colormap(xwks) 
 
- ;gsn_define_colormap(xwks,"t2m_29lev")
- ;gsn_define_colormap(xwks,"BlAqGrYeOrRe ") 
-
-;----------- Begin plot ----------------------------------------------------------
+;-------------------------------- Begin plot -------------------------------------
 
   pltres = True 
 
@@ -338,14 +327,18 @@ lnres@return_mask = True
 ;---Attach the Greek outlines
    id = gsn_add_shapefile_polylines(xwks,contour,shp_name,lnres)
 
-;maximize_output(wks,True)
-
+; Insert some text
 gsn_text_ndc(xwks,info, 0.08, 0.11, txres)    ; note when plotted
 
 ; Maximize plots in frame.
+;maximize_output(wks,True)
 ;psres = True                                                               
 ;maximize_output(xwks,psres)  ; calls draw and frame for you
 ;======================================================================
+
+; In the following section we will print on the map the values of temperature.
+; The commented sections will print the interpolated gridded values instead.
+
 txres1 = True
 txres1@txFontHeightF = 0.0070       ; size of meta data
 txres1@txFont        = "helvetica"
@@ -353,11 +346,6 @@ txres1@txFont        = "helvetica"
  
 lat2 = new(dimsizes(real_temp),typeof(yo),-1)
 copy_VarAtts(yo,lat2)
-
-;lat2!0 = "south_north"
-;lat2&south_north = yo
-;lat2!1 = "west_east"
-;lat2&west_east = xo
 
 lon2 = new(dimsizes(real_temp),typeof(xo),-1)
 copy_VarAtts(xo,lon2) 
@@ -405,19 +393,6 @@ nb = dimsizes(real_temp)
 
 ;temps1 = sprintf("%3.0f", z22(::3,::3))
 ;temps= where(temps1.eq.-20, " ", temps1)
-
-;printVarSummary(temps)
-;printVarSummary(zo)
-;printVarSummary(lon2)
-;printVarSummary(lat2)
-;print(temps)
-;exit
-
-
-;ath_t = sprintf("%3.0f ", temps)  
-;gsn_text_ndc(xwks,ath_t+"~S~o~N~C", 0.55, 0.50, txres1) 
-
-;text2 = gsn_add_text(xwks,contour,temps,lon2(::3,::3),lat2(::3,::3),txres1)
 
 text = gsn_add_text(xwks,contour,sprintf("%3.0f",z),x,y,txres1)
 
@@ -529,10 +504,7 @@ text = gsn_add_text(xwks,contour,sprintf("%3.0f",z),x,y,txres1)
   
  ;"tiMainString" :  "Overlapping text strings removed"
   end setvalues
-
-
-
-
+  
 draw(contour)
 frame(xwks)
 
