@@ -202,7 +202,6 @@ pw!1 = "lon"
 pw&lat = lat0
 pw&lon = lon0
 
-
 minpw = min(pw)
 maxpw= max(pw)
 print("Max PW: "+maxpw +" mm")
